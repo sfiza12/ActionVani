@@ -1,0 +1,17 @@
+# ActionVani Backend – Python Dependencies
+# Member 3: Backend & Browser Automation
+
+# Web framework
+fastapi==0.115.5
+
+# ASGI server (runs the FastAPI app)
+uvicorn[standard]==0.32.1
+
+# Data validation
+# Pydantic 2.14.x + pydantic-core 2.50.x ship pre-built cp314 wheels for
+# Python 3.14 on Windows. These versions do not require Rust compilation.
+pydantic==2.14.3
+
+# Testing tools
+pytest==8.3.3
+httpx==0.28.0
