@@ -12,6 +12,10 @@ uvicorn[standard]==0.32.1
 # Python 3.14 on Windows. These versions do not require Rust compilation.
 pydantic==2.14.3
 
+# Browser automation
+# Playwright drives headless/headed Chromium for government portal interaction
+playwright==1.65.0
+
 # Testing tools
 pytest==8.3.3
 httpx==0.28.0
