@@ -1,6 +1,10 @@
-﻿__pycache__/
+__pycache__/
 *.pyc
 .venv/
 .dart_tool/
 .idea/
 .vscode/
+.pytest_cache/
+test-results/
+playwright-report/
+*.log

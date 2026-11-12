@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>ActionVani Test Form</title>
+</head>
+
+<body>
+
+    <h1>Student Registration Form</h1>
+
+    <form id="registrationForm">
+
+        <label for="name">Full Name:</label>
+        <input type="text" id="name" name="name" placeholder="Enter your name" required>
+
+        <br><br>
+
+        <label for="dob">Date of Birth:</label>
+        <input type="date" id="dob" name="dob" required>
+
+        <br><br>
+
+        <label for="gender">Gender:</label>
+        <select id="gender" name="gender">
+            <option value="">Select Gender</option>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+            <option value="other">Other</option>
+        </select>
+
+        <br><br>
+
+        <input type="checkbox" id="agreement" name="agreement">
+
+        <label for="agreement">
+            I agree to the terms and conditions
+        </label>
+
+        <br><br>
+
+        <button type="submit">Submit</button>
+
+    </form>
+
+    <h3 id="result"></h3>
+
+    <script>
+        document.getElementById("registrationForm")
+            .addEventListener("submit", function (event) {
+
+                event.preventDefault();
+
+                document.getElementById("result").textContent =
+                    "Registration submitted successfully!";
+            });
+    </script>
+
+</body>
+
+</html>
