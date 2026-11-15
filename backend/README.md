@@ -1,13 +1,20 @@
 # ActionVani Backend
 
-Member 3's Python backend foundation for ActionVani (IndicAgent). The current code includes FastAPI health endpoints and a reusable Playwright browser workflow. This repository is still under development; this README does not describe it as production-ready.
+Member 3's Python backend foundation for ActionVani (IndicAgent). The current code includes FastAPI health endpoints, a minimal WebSocket envelope-validation/echo prototype, and a reusable Playwright browser workflow. This repository is still under development and is not production-ready.
 
 ## Current structure
 
 ```text
 backend/
-├── app/                         FastAPI application and response models
+├── app/
+│   ├── __init__.py             Python package marker
+│   ├── main.py                  FastAPI HTTP app and router registration
+│   ├── models.py                HTTP response models
+│   ├── session_protocol.py      Proposed WebSocket envelope validation
+│   ├── session_manager.py       Stateless connection validation and echo
+│   └── websocket.py             /ws/session route
 ├── browser/
+│   ├── __init__.py              Browser automation package exports
 │   ├── browser_manager.py       Chromium lifecycle, isolated contexts, page creation
 │   ├── navigation.py            URL navigation, redirect checks, structured results
 │   ├── security.py              URL scheme/domain policy and URL sanitization
@@ -17,13 +24,14 @@ backend/
 ├── tests/
 │   ├── test_health.py
 │   ├── test_browser.py
-│   └── test_form_automation.py
+│   ├── test_form_automation.py
+│   └── test_websocket.py        Offline WebSocket contract tests
 ├── test_form.html                Offline browser test fixture
 ├── requirements.txt
 └── README.md
 ```
 
-The HTTP API currently exposes `GET /` and `GET /health`. Browser automation is a Python module and is not yet wired into a service endpoint or mobile session workflow.
+The HTTP API exposes `GET /` and `GET /health`. The WebSocket prototype is at `/ws/session`; it does not manage persistent sessions or invoke browser automation or AI. Browser automation remains a separate Python module and is not wired to a service endpoint or mobile session workflow.
 
 ## Setup and tests
 
@@ -45,6 +53,25 @@ Start the current FastAPI foundation from `backend/` with:
 ```
 
 The root endpoint is `http://localhost:8000/`, health check is `http://localhost:8000/health`, and the generated API docs are at `http://localhost:8000/docs`.
+
+## WebSocket prototype
+
+`app.websocket` registers `WS /ws/session`. `SessionManager.handle_connection(websocket)` accepts JSON text messages, validates each message with `SessionEnvelope`, and echoes valid envelopes to the same connection. It keeps no session registry or message history and does not call an AI adapter or browser module. Client disconnects end the handler. Malformed JSON, invalid envelopes, and non-text frames close the connection with WebSocket code `1008` and a static reason.
+
+The prototype validates this required envelope shape:
+
+```json
+{
+  "event": "example.event",
+  "session_id": "session-123",
+  "request_id": "request-456",
+  "data": {"message": "example"}
+}
+```
+
+All four keys are required; extra keys are rejected. `event`, `session_id`, and `request_id` must be nonblank strings. `data` may be any JSON value. The event string is passed through as an opaque value: event names and their directions are proposed and still require agreement with Member 2 and the team. The example event name above is illustrative, not a confirmed contract. Session ownership/lifecycle, request correlation, invalid-message policy, authentication, origin checks, and message size/rate limits also need team and security review before client integration or deployment. Do not send credentials or sensitive citizen data through this echo prototype; it is not an authenticated or hardened data channel.
+
+The endpoint is intentionally independent of AI interfaces. `SessionManager` is a connection boundary that can be extended after Member 4 confirms the adapter contract; this implementation does not define that interface. It does not stream audio, perform form-state synchronization, map voice commands to actions, or submit portal forms.
 
 ## Browser modules
 
@@ -115,6 +142,7 @@ For local fixture testing only, create `SecurityPolicy(allow_file_scheme=True)` 
 - Do not log or unnecessarily persist passwords, Aadhaar, PAN, OTPs, or other citizen data. The form modules avoid returning live field values in extracted metadata and result messages, but callers still handle the supplied values and must protect them.
 - Do not bypass CAPTCHA or OTP checks. CAPTCHA/OTP handling is not implemented.
 - Do not automatically submit an application. A final submission must require explicit user confirmation in the integrating application; the current `FormFiller` has no submit action.
+- The WebSocket endpoint currently has no authentication, origin policy, persistent session lifecycle, message-size/rate limits, or transport-to-AI adapter. It echoes a valid envelope's data to the originating connection; use only nonsensitive sample data until the protocol and security controls are agreed and implemented.
 - Form support is limited to the controls listed above. Custom widgets and unsupported native control types require further implementation.
 - Browser validity does not guarantee portal-specific business-rule compliance.
 - This milestone is not a production deployment package. Authentication, session orchestration, data-retention policy, monitoring, and operational hardening require separate design and review.

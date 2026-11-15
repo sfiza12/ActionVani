@@ -1,21 +1,21 @@
 """
 ActionVani – FastAPI Backend
-Member 3: Backend Foundation (Milestone 1)
+Member 3: Backend Foundation
 
 This is the main entry point for the ActionVani backend server.
-It currently exposes two simple HTTP endpoints:
+It exposes two HTTP endpoints and a minimal WebSocket prototype:
 
   GET /         → General project information
   GET /health   → Health check to confirm the server is running
+  WS /ws/session → Validate and echo proposed session envelopes
 
-Future milestones will add:
-  - WebSocket session management
-  - Playwright browser automation
-  - AI and speech processing integration
+Browser automation remains a reusable module and is not connected to the
+WebSocket. AI and speech interfaces remain future work.
 """
 
 from fastapi import FastAPI
 from app.models import HealthResponse, InfoResponse
+from app.websocket import router as websocket_router
 
 # ---------------------------------------------------------------------------
 # App initialisation
@@ -32,6 +32,8 @@ app = FastAPI(
     ),
     version="0.1.0",
 )
+
+app.include_router(websocket_router)
 
 
 # ---------------------------------------------------------------------------
