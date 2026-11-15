@@ -16,6 +16,15 @@
 
         <br><br>
 
+        <!-- Optional controls used to exercise missing-label and unavailable-field handling. -->
+        <input type="text" id="nickname" name="nickname" placeholder="Optional nickname">
+        <input type="text" id="disabledField" name="disabledField" disabled>
+        <input type="text" id="readOnlyField" name="readOnlyField" value="locked" readonly>
+        <input type="file" id="attachment" name="attachment">
+        <textarea id="notes" name="notes" placeholder="Optional notes"></textarea>
+
+        <br><br>
+
         <label for="dob">Date of Birth:</label>
         <input type="date" id="dob" name="dob" required>
 

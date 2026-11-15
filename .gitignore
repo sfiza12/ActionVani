@@ -8,3 +8,17 @@ __pycache__/
 test-results/
 playwright-report/
 *.log
+
+# Local environment configuration and credentials
+.env
+.env.*
+!.env.example
+secrets/
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Playwright browser downloads when configured inside the repository
+ms-playwright/
+playwright-browsers/

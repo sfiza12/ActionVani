@@ -1,182 +1,120 @@
-# ActionVani – Backend Developer Guide
+# ActionVani Backend
 
-This folder contains the **Python FastAPI backend** and **Playwright Browser Automation Foundation** for ActionVani (IndicAgent).
+Member 3's Python backend foundation for ActionVani (IndicAgent). The current code includes FastAPI health endpoints and a reusable Playwright browser workflow. This repository is still under development; this README does not describe it as production-ready.
 
-The backend is responsible for orchestrating WebSocket communication, AI reasoning, and secure browser automation for public service portals. This document explains how to set up, run, and test it on your local machine.
+## Current structure
 
----
-
-## Folder Structure
-
-```
+```text
 backend/
-├── app/
-│   ├── __init__.py        ← Marks folder as a Python package
-│   ├── main.py            ← FastAPI app + HTTP endpoints (GET /, GET /health)
-│   └── models.py          ← Pydantic response models
-├── browser/               ← Playwright automation foundation
-│   ├── __init__.py        ← Package exports (BrowserManager, NavigationManager, etc.)
-│   ├── browser_manager.py ← Safe Chromium lifecycle (launch, context/page creation, cleanup)
-│   ├── navigation.py      ← Safe page navigation, timeouts, and redirect enforcement
-│   └── security.py        ← Configurable domain allowlist & URL sanitization
-├── ai/                    ← AI, speech, and OCR logic (future milestone)
+├── app/                         FastAPI application and response models
+├── browser/
+│   ├── browser_manager.py       Chromium lifecycle, isolated contexts, page creation
+│   ├── navigation.py            URL navigation, redirect checks, structured results
+│   ├── security.py              URL scheme/domain policy and URL sanitization
+│   ├── dom_extractor.py         Safe form-control metadata extraction
+│   ├── form_filler.py           Supported field filling and verification
+│   └── validator.py             Required/native validity and requested-value checks
 ├── tests/
-│   ├── __init__.py
-│   ├── test_health.py     ← Automated tests for FastAPI foundation (12 tests)
-│   └── test_browser.py    ← Automated tests for Browser & Security modules (14 tests)
-├── test_form.html         ← Local test form fixture for offline testing
-├── requirements.txt       ← All Python dependencies (pinned)
-└── README.md              ← This developer guide
+│   ├── test_health.py
+│   ├── test_browser.py
+│   └── test_form_automation.py
+├── test_form.html                Offline browser test fixture
+├── requirements.txt
+└── README.md
 ```
 
----
+The HTTP API currently exposes `GET /` and `GET /health`. Browser automation is a Python module and is not yet wired into a service endpoint or mobile session workflow.
 
-## Prerequisites
+## Setup and tests
 
-- **Python 3.10 or later** must be installed.  
-  Check version: `python --version`
-- **pip** must be available.  
-  Check: `pip --version`
+From the repository's `backend/` directory in PowerShell:
 
----
-
-## Step 1 – Create and Activate Virtual Environment
-
-**Windows (PowerShell):**
 ```powershell
-cd backend
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
+py -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe -m playwright install chromium
+.\.venv\Scripts\python.exe -m pytest tests/ -v
 ```
 
-If PowerShell blocks the activation script, run this once:
+The tests use the local HTML fixture and local HTTP servers; they do not navigate to external government sites. Playwright's Chromium binary must be installed before running the browser tests. The project pins FastAPI, Pydantic, Playwright, pytest, and httpx in `requirements.txt`.
+
+Start the current FastAPI foundation from `backend/` with:
+
 ```powershell
-Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+.\.venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
-**macOS / Linux:**
-```bash
-cd backend
-python3 -m venv .venv
-source .venv/bin/activate
+The root endpoint is `http://localhost:8000/`, health check is `http://localhost:8000/health`, and the generated API docs are at `http://localhost:8000/docs`.
+
+## Browser modules
+
+### Browser lifecycle: `BrowserManager`
+
+`BrowserManager(headless=True, slow_mo=0, default_timeout_ms=30000)` owns the Playwright and Chromium lifecycle. Its public methods are `start()`, `new_context(**kwargs)`, `new_page(context=None)`, and `close()`. It can also be used as a context manager, which starts the browser on entry and closes its pages, contexts, and browser on exit. `is_running` reports whether the browser is active.
+
+### Navigation and URL security: `NavigationManager` and `SecurityPolicy`
+
+`NavigationManager(security_policy=None, default_timeout_ms=30000).navigate(page, url, timeout_ms=None, wait_until="domcontentloaded")` validates the target before navigation, inspects redirected requests, and returns a `NavigationResult` with success, URL, status, title, redirect, or sanitized error information.
+
+`SecurityPolicy(allowed_domains=None, allow_file_scheme=False)` provides `validate_url(url)`, `is_domain_allowed(hostname)`, `add_allowed_domain(domain)`, and `remove_allowed_domain(domain)`. It also provides `sanitize_url(url)` and `sanitize_text(text)` for masking known sensitive URL parameters and credentials. Its defaults allow localhost addresses and `gov.in`/`nic.in` domains. `file://` is disabled unless explicitly enabled for local fixtures.
+
+The allowlist and redirect checks limit navigation destinations; they do not prove that a portal is authentic, safe, or compliant with its own rules. Use a deliberately configured allowlist for the deployment environment. URL sanitization covers known URL patterns; it is not a substitute for careful handling of citizen data throughout an application.
+
+### Form metadata: `DOMExtractor`
+
+Create it with a Playwright page and call `DOMExtractor(page).extract_fields()`. It returns structured metadata for supported native `input`, `select`, and `textarea` controls: ID, name, type, associated label when available, placeholder, required/disabled/read-only flags, selector, and dropdown options. Select metadata also identifies multi-selects and disabled options. Hidden inputs and button-like input types are omitted. Current control values are not returned.
+
+### Filling: `FormFiller`
+
+Call `FormFiller(page).fill_fields(fields, values)`, where `fields` comes from `DOMExtractor` and `values` is keyed by a field's name, ID, or label. It supports text inputs, date inputs, textareas, single-select dropdowns, and checkboxes (checkbox values must be booleans). Dropdown choices can be matched by option value or visible label. Each result includes a status and a verification flag, without echoing the requested or actual field value.
+
+Disabled and read-only fields are reported without being changed. Unsupported controls include password, file, radio, other input types, and multi-select dropdowns. A disabled dropdown choice receives a distinct `disabled_option` status. The filler never clicks a submit button.
+
+### Validation: `FormValidator`
+
+Call `FormValidator(page).validate(fields, requested_values=None)`. The structured result includes per-field inspection status, required-field status, native HTML validity, browser validation messages, and requested-value match status when applicable. Required radio-button groups can be validated as groups. Radio-button filling and requested-option matching are not currently supported.
+
+Native HTML validation only checks browser-level constraints such as `required`, type, and declared limits. It does not verify government-specific business rules or establish that an application is complete or eligible.
+
+## Example workflow
+
+```python
+from browser import (
+    BrowserManager,
+    DOMExtractor,
+    FormFiller,
+    FormValidator,
+    NavigationManager,
+)
+
+approved_url = "https://your-approved-portal.gov.in/application"
+requested_values = {
+    "name": "Asha Rao",
+    "dob": "2002-04-23",
+    "gender": "female",
+    "agreement": True,
+}
+
+with BrowserManager(headless=True) as manager:
+    page = manager.new_page()
+    navigation = NavigationManager()
+    nav_result = navigation.navigate(page, approved_url)
+
+    if nav_result.success:
+        fields = DOMExtractor(page).extract_fields()
+        fill_result = FormFiller(page).fill_fields(fields, requested_values)
+        validation_result = FormValidator(page).validate(fields, requested_values)
+        # Present the proposed application details and wait for explicit user
+        # confirmation before any final submission workflow.
 ```
 
----
+For local fixture testing only, create `SecurityPolicy(allow_file_scheme=True)` and pass it to `NavigationManager`. Do not enable `file://` for normal portal navigation.
 
-## Step 2 – Install Dependencies
+## Security and current limitations
 
-With `.venv` activated:
-
-```bash
-pip install -r requirements.txt
-```
-
-This installs:
-
-| Package              | Purpose                                             |
-|----------------------|-----------------------------------------------------|
-| `fastapi`            | Web framework for building the API                  |
-| `uvicorn[standard]`  | ASGI server that runs the FastAPI application       |
-| `pydantic`           | Data validation for request and response models     |
-| `playwright`         | Headed & headless Chromium browser automation       |
-| `pytest`             | Testing framework                                   |
-| `httpx`              | HTTP client used by FastAPI's TestClient            |
-
----
-
-## Step 3 – Install Playwright Chromium
-
-Playwright needs the Chromium browser binary to drive web sessions. Install Chromium once:
-
-```bash
-playwright install chromium
-```
-
----
-
-## Step 4 – Browser Module Architecture & Security
-
-The browser module (`backend/browser/`) converts earlier experimental automation into modular, secure, production-grade components:
-
-### 1. `BrowserManager` (`browser/browser_manager.py`)
-- Launches Chromium using Playwright in either `headless=True` (automated) or `headless=False` (visual debugging) mode.
-- Creates isolated contexts (`new_context()`) and tabs (`new_page()`).
-- Implements Python context manager support (`with BrowserManager() as bm:`).
-- Guarantees complete cleanup on error or exit so orphan browser processes are never left running.
-
-### 2. `NavigationManager` (`browser/navigation.py`)
-- Manages safe navigation to approved web addresses.
-- Intercepts and validates HTTP redirect targets (e.g. 301, 302, 307) so an approved URL cannot secretly redirect to an untrusted domain.
-- Handles timeouts and network drops gracefully without crashing, returning structured `NavigationResult` objects.
-
-### 3. `SecurityPolicy` (`browser/security.py`)
-- **Configurable Allowlist**: By default allows `localhost`, `127.0.0.1`, and official Indian public service domains (`*.gov.in`, `*.nic.in`).
-- **Scheme Enforcement**: Only `http`, `https`, and (when enabled for testing) `file://` are permitted. Dangerous schemes like `javascript:`, `data:`, and `vbscript:` are blocked.
-- **Sensitive Data Masking**: Automatically redacts sensitive query parameters (such as `token`, `password`, `key`, `aadhaar`, `otp`) from logs and error messages.
-
----
-
-## Step 5 – Running Automated Tests
-
-ActionVani backend includes comprehensive automated tests that run 100% offline without hitting external websites.
-
-From the `backend/` directory:
-
-### Run all tests:
-```bash
-pytest tests/ -v
-```
-
-### Run only FastAPI health tests:
-```bash
-pytest tests/test_health.py -v
-```
-
-### Run only Browser & Security tests:
-```bash
-pytest tests/test_browser.py -v
-```
-
-**Expected output summary:**
-```
-tests/test_browser.py::test_security_policy_default_domains PASSED
-tests/test_browser.py::test_security_policy_domain_matching PASSED
-tests/test_browser.py::test_security_policy_valid_http_url PASSED
-tests/test_browser.py::test_security_policy_blocks_disallowed_domain PASSED
-tests/test_browser.py::test_security_policy_blocks_dangerous_schemes PASSED
-tests/test_browser.py::test_security_policy_file_scheme_control PASSED
-tests/test_browser.py::test_security_policy_url_sanitization PASSED
-tests/test_browser.py::test_browser_manager_launch_and_close PASSED
-tests/test_browser.py::test_browser_manager_context_manager PASSED
-tests/test_browser.py::test_browser_manager_multiple_close_is_safe PASSED
-tests/test_browser.py::test_navigation_to_local_fixture_form PASSED
-tests/test_browser.py::test_navigation_blocked_domain_before_network PASSED
-tests/test_browser.py::test_navigation_redirect_to_disallowed_domain_blocked PASSED
-tests/test_browser.py::test_navigation_timeout_handling PASSED
-tests/test_health.py::test_health_returns_200 PASSED
-...
-26 passed in 5.5s
-```
-
----
-
-## Step 6 – Start the Backend Server
-
-From the `backend/` folder:
-
-```bash
-uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-```
-
-URLs:
-- Root info: `http://localhost:8000/`
-- Health check: `http://localhost:8000/health`
-- Swagger documentation: `http://localhost:8000/docs`
-
----
-
-## Next Steps
-
-- Form element extraction & state synchronization module.
-- Voice-to-Action mapping.
-- WebSocket session manager for real-time Flutter mobile app integration.
+- Do not log or unnecessarily persist passwords, Aadhaar, PAN, OTPs, or other citizen data. The form modules avoid returning live field values in extracted metadata and result messages, but callers still handle the supplied values and must protect them.
+- Do not bypass CAPTCHA or OTP checks. CAPTCHA/OTP handling is not implemented.
+- Do not automatically submit an application. A final submission must require explicit user confirmation in the integrating application; the current `FormFiller` has no submit action.
+- Form support is limited to the controls listed above. Custom widgets and unsupported native control types require further implementation.
+- Browser validity does not guarantee portal-specific business-rule compliance.
+- This milestone is not a production deployment package. Authentication, session orchestration, data-retention policy, monitoring, and operational hardening require separate design and review.
