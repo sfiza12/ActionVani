@@ -1,6 +1,139 @@
-﻿__pycache__/
-*.pyc
+﻿
+# ==========================================
+# PYTHON
+# ==========================================
+
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
 .venv/
+venv/
+env/
+
+# Python build files
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# ==========================================
+# ENVIRONMENT VARIABLES AND SECRETS
+# ==========================================
+
+.env
+.env.*
+!.env.example
+
+# API keys and credentials
+secrets/
+credentials/
+*.pem
+*.key
+*.p12
+*.pfx
+
+# ==========================================
+# AI MODELS AND MODEL CACHES
+# ==========================================
+
+/models/
+model_cache/
+huggingface/
+.cache/
+checkpoints/
+weights/
+
+# Model weight files
+*.safetensors
+*.pt
+*.pth
+*.bin
+*.onnx
+
+# ==========================================
+# DATASETS
+# ==========================================
+
+# Original user recordings
+datasets/audio/
+
+# Converted and temporary audio
+datasets/processed_audio/
+
+# Generated transcription outputs
+datasets/evaluation/**/transcription_results.json
+datasets/evaluation/**/*_result.txt
+
+# Audio and video files
+*.wav
+*.mp3
+*.mp4
+*.m4a
+*.flac
+*.ogg
+
+# Private document datasets
+datasets/documents/
+datasets/private/
+
+# ==========================================
+# EXPERIMENTAL OUTPUTS
+# ==========================================
+
+logs/
+*.log
+outputs/
+temp/
+tmp/
+*.tmp
+
+# ==========================================
+# TESTING AND CODE QUALITY
+# ==========================================
+
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# ==========================================
+# FLUTTER AND DART
+# ==========================================
+
 .dart_tool/
+.packages
+.pub-cache/
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# ==========================================
+# IDE AND EDITOR FILES
+# ==========================================
+
 .idea/
 .vscode/
+*.code-workspace
+
+# Antigravity
+.agstate/
+
+# ==========================================
+# OPERATING SYSTEM
+# ==========================================
+
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# ==========================================
+# GIT TEMPORARY FILES
+# ==========================================
+
+*.swp
+*.swo
+*.orig
+*.bak
