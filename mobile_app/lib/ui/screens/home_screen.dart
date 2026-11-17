@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import '../widgets/summary_card.dart';
 import '../widgets/microphone_button.dart';
 import '../widgets/recording_indicator.dart';
