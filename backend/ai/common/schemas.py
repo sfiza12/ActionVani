@@ -21,7 +21,7 @@ Playwright & FormFiller Integration Rules (Member 3 Compatibility):
   - AI MUST NEVER invent field identifiers or generate CSS selectors.
   - Target_field is mandatory and non-empty for 'suggested', 'missing', and 'ambiguous' mappings;
     it is optional (None) ONLY for 'manual_handling' mappings where no identifier exists.
-  - FormFiller supports: 'text', 'date', 'select', 'checkbox'.
+  - FormFiller supports: 'text', 'date', 'select', 'checkbox', 'textarea'.
   - Controls with limitations ('radio', 'select-multiple') are flagged for manual handling
     or clarification and NEVER marked as ready-to-execute 'suggested' mappings.
   - Deterministic mock mappings set 'is_mock=True', 'confidence=None', and 'processing_time_seconds=None'

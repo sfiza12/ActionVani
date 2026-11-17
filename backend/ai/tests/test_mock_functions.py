@@ -255,37 +255,39 @@ class TestProcessFormFields:
         assert missing["value"] is None
         assert missing["status"] == "missing"
 
+    
     def test_textarea_is_supported_and_not_manual_handling(self):
         """Textarea fields supported by FormFiller are mapped, not sent to manual handling."""
 
-    assert "textarea" in SUPPORTED_FORM_FILLER_TYPES
+        assert "textarea" in SUPPORTED_FORM_FILLER_TYPES
 
-    textarea_field = {
-        "name": "comments",
-        "id": "comments",
-        "label": "Additional comments",
-        "type": "textarea",
-        "selector": "#comments",
-        "required": True,
-    }
+        textarea_field = {
+            "name": "comments",
+            "id": "comments",
+            "label": "Additional comments",
+            "type": "textarea",
+            "selector": "#comments",
+            "required": True,
+        }
 
-    user_info = {
-        "comments": "I need help completing this application."
-    }
+        user_info = {
+            "comments": "I need help completing this application."
+        }
 
-    result = process_form_fields([textarea_field], user_info)
+        result = process_form_fields([textarea_field], user_info)
 
-    assert len(result["suggested_mappings"]) == 1
+        assert len(result["suggested_mappings"]) == 1
 
-    suggested = result["suggested_mappings"][0]
+        suggested = result["suggested_mappings"][0]
 
-    assert suggested["target_field"] == "comments"
-    assert suggested["field_type"] == "textarea"
-    assert suggested["value"] == user_info["comments"]
-    assert suggested["status"] == "suggested"
+        assert suggested["target_field"] == "comments"
+        assert suggested["field_type"] == "textarea"
+        assert suggested["value"] == user_info["comments"]
+        assert suggested["status"] == "suggested"
 
-    assert result["manual_handling"] == []
-    assert result["ready_for_review"] is True
+        assert result["manual_handling"] == []
+        assert result["ready_for_review"] is True
+
 
     def test_unsupported_radio_in_manual_handling(self):
         """Radio controls are placed under manual_handling, not suggested."""
