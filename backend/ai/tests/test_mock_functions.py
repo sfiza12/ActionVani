@@ -34,6 +34,7 @@ from backend.ai.common.schemas import (
     AgreedIntent,
     DocumentType,
     FieldMappingStatus,
+    FormFieldMapping,
     FormMappingResponse,
     IntentClassificationResponse,
     TranscriptionResponse,
@@ -348,6 +349,73 @@ class TestProcessFormFields:
 
         assert result["ready_for_review"] is False
         assert len(result["manual_handling"]) == 1
+
+    def test_ambiguous_form_field_mapping_contract(self):
+        """
+        Verify the schema contract for an ambiguous FormFieldMapping within FormMappingResponse.
+
+        NOTE: This tests the schema's ambiguous-response contract. The deterministic mock
+        function process_form_fields() does not currently generate ambiguous mappings because
+        the deterministic mock maps fields directly to suggested, missing, or manual_handling.
+        """
+        ambiguous_mapping = FormFieldMapping(
+            target_field="name",
+            field_id="name",
+            value=None,
+            status="ambiguous",
+            field_type="text",
+            selector="#name",
+            label="Full Name",
+            confidence=None,
+            candidate_values=["Priya Sharma", "Priya K Sharma"],
+            clarification_prompt="Multiple matching names found: Priya Sharma or Priya K Sharma.",
+        )
+
+        response = FormMappingResponse(
+            status=AIResponseStatus.SUCCESS,
+            ready_for_review=False,
+            suggested_mappings=[],
+            missing_fields=[],
+            ambiguous_mappings=[ambiguous_mapping],
+            manual_handling=[],
+            is_mock=True,
+            confidence=None,
+            processing_time_seconds=None,
+        )
+
+        # Verify mapping attributes: real target_field, null value, status="ambiguous"
+        assert ambiguous_mapping.target_field == "name"
+        assert ambiguous_mapping.value is None
+        assert ambiguous_mapping.status == "ambiguous"
+        assert ambiguous_mapping.status == FieldMappingStatus.AMBIGUOUS
+
+        # Verify that the ambiguous mapping appears in ambiguous_mappings and all_mappings
+        assert len(response.ambiguous_mappings) == 1
+        assert response.ambiguous_mappings[0] == ambiguous_mapping
+        assert response.ambiguous_mappings[0].target_field == "name"
+        assert response.ambiguous_mappings[0].value is None
+        assert response.ambiguous_mappings[0].status == "ambiguous"
+
+        assert len(response.all_mappings) == 1
+        assert response.all_mappings[0] == ambiguous_mapping
+        assert response.all_mappings[0].target_field == "name"
+
+        # Verify that the mapping is not included in suggested_mappings
+        assert len(response.suggested_mappings) == 0
+        assert ambiguous_mapping not in response.suggested_mappings
+
+        # Verify that ready_for_review=False when ambiguous_mappings is non-empty
+        assert response.ready_for_review is False
+        assert response.is_mock is True
+
+        # Verify safety invariant: ready_for_review cannot be True when ambiguous_mappings is non-empty
+        with pytest.raises(ValueError, match="ready_for_review cannot be True"):
+            FormMappingResponse(
+                status=AIResponseStatus.SUCCESS,
+                ready_for_review=True,
+                ambiguous_mappings=[ambiguous_mapping],
+                is_mock=True,
+            )
 
     def test_schema_compliance(self):
         """Result validates against FormMappingResponse Pydantic model."""
