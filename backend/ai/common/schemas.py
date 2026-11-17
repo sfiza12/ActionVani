@@ -84,7 +84,13 @@ class AIResponseStatus(str, Enum):
 
 
 # Supported & unsupported control types for Member 3's FormFiller
-SUPPORTED_FORM_FILLER_TYPES: tuple[str, ...] = ("text", "date", "select", "checkbox")
+SUPPORTED_FORM_FILLER_TYPES: tuple[str, ...] = (
+    "text",
+    "date",
+    "select",
+    "checkbox",
+    "textarea",
+)
 UNSUPPORTED_FORM_FILLER_TYPES: tuple[str, ...] = (
     "radio",
     "radio-group",
